@@ -1,0 +1,156 @@
+var CenterX = 0,
+    CenterY = 0,
+    chartHeight = pbi.height,
+    chartWidth = pbi.width,
+    ChartColor = "red",
+    NeedleColorCurrent = "black",
+	NeedleColorPrevious = "blue",
+    NeedleYrColor = "green";
+var	NeedleColorYrMin = NeedleYrColor,
+    NeedleColorYrMax = NeedleYrColor;
+var NeedleRadius = chartHeight/60 < chartWidth/120 ? chartHeight/60:chartWidth/120;
+var size = chartHeight/15 < chartWidth/30 ? chartHeight/15:chartWidth/30;
+if( (chartHeight - (size*2.8) - (NeedleRadius *2)) < ((chartWidth - (size*6))/2)){
+  outerRadius = (chartHeight - (size*2.8) - (NeedleRadius *2));
+}
+else{
+  outerRadius = ((chartWidth - (size*6))/2);
+}
+innerRadius = 0.75 * outerRadius;
+var correctionLR = (chartWidth - (size*6 + 2*outerRadius))/2
+var correctionUD = (chartHeight - (size*2.8 + outerRadius))/2
+var margin = { left: size*3+correctionLR, right: size*3+correctionLR, top: size*1.4+correctionUD, bottom: size*1.4+correctionUD };
+var outerRadius, innerRadius, svg, arc,chartName,ColorsPercent, NeedleHeight;
+var needleCurrent, needlePrevious, needleYrMin, needleYrMax;
+var TopXCurrent,TopYCurrent,LeftXCurrent,LeftYCurrent,RightXCurrent,RightYCurrent;
+var TopXPrevious,TopYPrevious,LeftXPrevious,LeftYPrevious,RightXPrevious,RightYPrevious;
+var TopXYrMin,TopYYrMin,LeftXYrMin,LeftYYrMin,RightXYrMin,RightYYrMin;
+var TopXYrMax,TopYYrMax,LeftXYrMax,LeftYYrMax,RightXYrMax,RightYYrMax;
+var LeftXYrMinMid,LeftYYrMinMid,RightXYrMinMid,RightYYrMinMid;
+var LeftXYrMaxMid,LeftYYrMaxMid,RightXYrMaxMid,RightYYrMaxMid;
+var ratioYr = 0.7;
+var currentVal = 0,
+    minVal = 0,
+    maxVal = 180,
+    prevVal = 0,
+    yrMin = 0,
+    yrMax = 0;
+
+var percToDeg = function (perc) {
+    return perc * 360;
+};
+
+var percToRad = function (perc) {
+    return degToRad(percToDeg(perc));
+};
+
+var degToRad = function (deg) {
+    return deg * Math.PI / 180;
+};
+
+var updateGaugeChart = function(){
+  pbi.dsv(function(data) {
+    currentVal = data[0].currentval;
+    minVal = data[0].minval;
+    maxVal = data[0].maxval;
+    prevVal = data[0].prevval;
+    yrMin = data[0].yrmin;
+    yrMax = data[0].yrmax;
+    NeedleHeight = outerRadius;
+	svg = d3.select("#chart")
+            .attr("height", chartHeight)
+            .attr("width", chartWidth)
+            .append("g")
+            .attr("transform", "translate(" + (margin.left + outerRadius) + "," + (margin.top + outerRadius) + ")");
+	d3.select("#chart").append("g")
+            .attr("transform", "translate(" + (margin.left + outerRadius) + "," + (margin.top) + ")");
+  	arc = d3.svg.arc().innerRadius(innerRadius).outerRadius(outerRadius).startAngle(Math.PI / 2).endAngle(-Math.PI / 2);
+	svg.append("path")
+            .attr("d", arc)
+            .attr("class", "GaugeArc")
+            .attr("fill", ChartColor)
+            .attr("stroke-width", 1)
+            .attr("stroke", ChartColor);
+    var currentRatio = (data[0].currentval - data[0].minval)/(data[0].maxval-data[0].minval);
+    var currentThetha = percToRad(currentRatio)/2;
+    var previousRatio = (data[0].prevval - data[0].minval)/(data[0].maxval-data[0].minval);
+    var previousThetha = percToRad(previousRatio)/2;
+    var yrMinRatio = (data[0].yrmin - data[0].minval)/(data[0].maxval-data[0].minval);
+    var yrMinThetha = percToRad(yrMinRatio)/2;
+    var yrMaxRatio = (data[0].yrmax - data[0].minval)/(data[0].maxval-data[0].minval);
+    var yrMaxThetha = percToRad(yrMaxRatio)/2;
+    
+    TopXCurrent = CenterX - NeedleHeight * Math.cos(currentThetha);
+    TopYCurrent = CenterY - NeedleHeight * Math.sin(currentThetha);
+    LeftXCurrent = CenterX - NeedleRadius * Math.cos(currentThetha - Math.PI / 2);
+    LeftYCurrent = CenterY - NeedleRadius * Math.sin(currentThetha - Math.PI / 2);
+    RightXCurrent = CenterX - NeedleRadius * Math.cos(currentThetha + Math.PI / 2);
+    RightYCurrent = CenterY - NeedleRadius * Math.sin(currentThetha + Math.PI / 2);
+    
+    TopXPrevious = CenterX - NeedleHeight * Math.cos(previousThetha);
+    TopYPrevious = CenterY - NeedleHeight * Math.sin(previousThetha);
+    LeftXPrevious = CenterX - NeedleRadius * Math.cos(previousThetha - Math.PI / 2);
+    LeftYPrevious = CenterY - NeedleRadius * Math.sin(previousThetha - Math.PI / 2);
+    RightXPrevious = CenterX - NeedleRadius * Math.cos(previousThetha + Math.PI / 2);
+    RightYPrevious = CenterY - NeedleRadius * Math.sin(previousThetha + Math.PI / 2);
+    
+    TopXYrMin = CenterX - NeedleHeight * Math.cos(yrMinThetha);
+    TopYYrMin = CenterY - NeedleHeight * Math.sin(yrMinThetha);
+    LeftXYrMin = CenterX - NeedleRadius * Math.cos(yrMinThetha - Math.PI / 2);
+    LeftYYrMin = CenterY - NeedleRadius * Math.sin(yrMinThetha - Math.PI / 2);
+    RightXYrMin = CenterX - NeedleRadius * Math.cos(yrMinThetha + Math.PI / 2);
+    RightYYrMin = CenterY - NeedleRadius * Math.sin(yrMinThetha + Math.PI / 2);
+    LeftXYrMinMid = (ratioYr*TopXYrMin)+((1-ratioYr)*LeftXYrMin)
+    LeftYYrMinMid = (ratioYr*TopYYrMin)+((1-ratioYr)*LeftYYrMin);
+    RightXYrMinMid = (ratioYr*TopXYrMin)+((1-ratioYr)*RightXYrMin);
+    RightYYrMinMid = (ratioYr*TopYYrMin)+((1-ratioYr)*RightYYrMin);
+    
+    TopXYrMax = CenterX - NeedleHeight * Math.cos(yrMaxThetha);
+    TopYYrMax = CenterY - NeedleHeight * Math.sin(yrMaxThetha);
+    LeftXYrMax = CenterX - NeedleRadius * Math.cos(yrMaxThetha - Math.PI / 2);
+    LeftYYrMax = CenterY - NeedleRadius * Math.sin(yrMaxThetha - Math.PI / 2);
+    RightXYrMax = CenterX - NeedleRadius * Math.cos(yrMaxThetha + Math.PI / 2);
+    RightYYrMax = CenterY - NeedleRadius * Math.sin(yrMaxThetha + Math.PI / 2);
+    LeftXYrMaxMid = (ratioYr*TopXYrMax)+((1-ratioYr)*LeftXYrMax);
+    LeftYYrMaxMid = (ratioYr*TopYYrMax)+((1-ratioYr)*LeftYYrMax);
+    RightXYrMaxMid = (ratioYr*TopXYrMax)+((1-ratioYr)*RightXYrMax);
+    RightYYrMaxMid = (ratioYr*TopYYrMax)+((1-ratioYr)*RightYYrMax);
+    
+    var innerArc = svg.append("g")
+            .attr("tranform", "translate(" + (margin.left + outerRadius) + "," + (margin.top + outerRadius + NeedleRadius) + ")")
+            .attr('class', 'innerarc');
+    var arc1 =d3.svg.arc().innerRadius(outerRadius*ratioYr).outerRadius(outerRadius*ratioYr + size/10).startAngle(yrMinThetha - Math.PI / 2).endAngle(yrMaxThetha - Math.PI / 2);
+    innerArc.append("path")
+            .attr("d", arc1)
+            .attr("fill", NeedleYrColor)
+            .attr("stroke-width", 1)
+            .attr("stroke", NeedleYrColor);
+    
+    needleYrMin = svg.append("g")
+            .attr("tranform", "translate(" + (margin.left + outerRadius) + "," + (margin.top + outerRadius + NeedleRadius) + ")")
+            .attr('class', 'needle');
+    needleYrMax = svg.append("g")
+            .attr("tranform", "translate(" + (margin.left + outerRadius) + "," + (margin.top + outerRadius + NeedleRadius) + ")")
+            .attr('class', 'needle');
+    needlePrevious = svg.append("g")
+            .attr("tranform", "translate(" + (margin.left + outerRadius) + "," + (margin.top + outerRadius + NeedleRadius) + ")")
+            .attr('class', 'needle');
+    needleCurrent = svg.append("g")
+            .attr("tranform", "translate(" + (margin.left + outerRadius) + "," + (margin.top + outerRadius + NeedleRadius) + ")")
+            .attr('class', 'needle');
+    
+    needleYrMin.append("path").attr('d', "M " + LeftXYrMinMid + ' ' + LeftYYrMinMid + ' L ' + TopXYrMin + ' ' + TopYYrMin + ' L ' + RightXYrMinMid + ' ' + RightYYrMinMid).attr("fill",NeedleColorYrMin);
+    needleYrMax.append("path").attr('d', "M " + LeftXYrMaxMid + ' ' + LeftYYrMaxMid + ' L ' + TopXYrMax + ' ' + TopYYrMax + ' L ' + RightXYrMaxMid + ' ' + RightYYrMaxMid).attr("fill",NeedleColorYrMax);
+    needlePrevious.append("path").attr('d', "M " + LeftXPrevious + ' ' + LeftYPrevious + ' L ' + TopXPrevious + ' ' + TopYPrevious + ' L ' + RightXPrevious + ' ' + RightYPrevious).attr("fill",NeedleColorPrevious);
+    needleCurrent.append("path").attr('d', "M " + LeftXCurrent + ' ' + LeftYCurrent + ' L ' + TopXCurrent + ' ' + TopYCurrent + ' L ' + RightXCurrent + ' ' + RightYCurrent);
+    needleCurrent.append("circle").attr("r", NeedleRadius+2).attr("fill", NeedleColorCurrent);
+    d3.select("#chart").append("text").attr("id","minval").attr("x",margin.left+(outerRadius - innerRadius)/2.5).attr("y",margin.top+outerRadius+(size*1.3)).text(minVal).style("font-size",""+size+"px");
+  	d3.select("#chart").append("text").attr("id","maxval").attr("x",margin.left+(outerRadius*2)-(outerRadius - innerRadius)/1.5).attr("y",margin.top+outerRadius+(size*1.3)).text(maxVal).style("font-size",""+size+"px");
+	d3.select("#chart").append("text").attr("id","currentval").attr("x",margin.left+outerRadius+TopXCurrent*1.05-size*0.6).attr("y",margin.top+outerRadius+TopYCurrent*1.05).text(currentVal).style("font-size",""+size+"px");
+  	d3.select("#chart").append("text").attr("id","previousval").attr("x",margin.left+outerRadius+TopXPrevious*1.05-size*0.6).attr("y",margin.top+outerRadius+TopYPrevious*1.05).text(prevVal).style("font-size",""+size+"px");
+    d3.select("#chart").append("text").attr("id","yrmin").attr("x",margin.left+outerRadius+TopXYrMin*1.05-size*0.6).attr("y",margin.top+outerRadius+TopYYrMin*1.05).text(yrMin).style("font-size",""+size+"px");
+    d3.select("#chart").append("text").attr("id","yrmax").attr("x",margin.left+outerRadius+TopXYrMax*1.05-size*0.6).attr("y",margin.top+outerRadius+TopYYrMax*1.05).text(yrMax).style("font-size",""+size+"px");
+  });
+};
+
+updateGaugeChart();
